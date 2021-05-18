@@ -1,0 +1,29 @@
+{
+  "name": "aivec/pt-bundler",
+  "description": "WordPress plugin/theme ZIP bundler library",
+  "type": "library",
+  "license": "GPL-2.0-only",
+  "authors": [
+    {
+      "name": "Evan Shaw",
+      "email": "evandanielshaw@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Aivec\\PtBundler\\": "src"
+    }
+  },
+  "require": {
+    "php": ">=7.2",
+    "ext-zip": "*",
+    "symfony/filesystem": "^5.2"
+  },
+  "require-dev": {
+    "aivec/phpcs-wp": "^2.0"
+  },
+  "scripts": {
+    "lint": "phpcs -ps --standard=AivecWP-7 .",
+    "lint:fix": "phpcbf -ps --standard=AivecWP-7 ."
+  }
+}
