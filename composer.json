@@ -23,7 +23,7 @@
     "aivec/phpcs-wp": "^2.0"
   },
   "scripts": {
-    "lint": "phpcs -ps --standard=AivecWP-7 .",
-    "lint:fix": "phpcbf -ps --standard=AivecWP-7 ."
+    "lint": "phpcs -ps --standard=AivecWP-7 src",
+    "lint:fix": "phpcbf -ps --standard=AivecWP-7 src"
   }
 }

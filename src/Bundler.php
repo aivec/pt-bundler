@@ -244,10 +244,13 @@ class Bundler
 
             // add version number to entry file if applicable
             $file = file_get_contents("./{$this->ptname}/{$this->ptname}.php");
-            $file = str_replace('%%VERSION%%', $version, $file);
-            file_put_contents("./{$this->ptname}/{$this->ptname}.php", $file);
+            if ($file !== false) {
+                $file = str_replace('%%VERSION%%', $version, $file);
+                file_put_contents("./{$this->ptname}/{$this->ptname}.php", $file);
+            }
 
             self::zipDir("./{$this->ptname}", "./{$this->ptname}.zip");
+            self::zipDir("./{$this->ptname}", "./{$this->ptname}.{$version}.zip");
 
             $filesystem->remove($this->ptname);
         } catch (Exception $exception) {
