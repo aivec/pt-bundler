@@ -20,10 +20,12 @@
     "symfony/filesystem": "^5.2"
   },
   "require-dev": {
-    "aivec/phpcs-wp": "^2.0"
+    "aivec/phpcs-wp": "^2.0",
+    "phpunit/phpunit": "^9.5"
   },
   "scripts": {
     "lint": "phpcs -ps --standard=AivecWP-7 src",
-    "lint:fix": "phpcbf -ps --standard=AivecWP-7 src"
+    "lint:fix": "phpcbf -ps --standard=AivecWP-7 src",
+    "test": "phpunit tests"
   }
 }

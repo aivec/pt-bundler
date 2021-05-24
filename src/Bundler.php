@@ -22,6 +22,15 @@ class Bundler
     public $ptname;
 
     /**
+     * Base directory where paths should be resolved from.
+     *
+     * Defaults to `getcwd()`
+     *
+     * @var string
+     */
+    public $basedir;
+
+    /**
      * List of folders to include in the archive file
      *
      * @var string[]
@@ -50,6 +59,13 @@ class Bundler
     public $targetsToCleanAfterBuild = [];
 
     /**
+     * List of files/folders to delete from the archive folder
+     *
+     * @var string[]
+     */
+    public $archiveTargetsToClean = [];
+
+    /**
      * Build step callback
      *
      * @var callable
@@ -72,6 +88,7 @@ class Bundler
      */
     public function __construct(string $ptname) {
         $this->ptname = $ptname;
+        $this->basedir = getcwd();
     }
 
     /**
@@ -99,7 +116,9 @@ class Bundler
     }
 
     /**
-     * Specifies list of files/folders to delete before build step
+     * Specifies list of files/folders to delete before build step. Accepts glob patterns.
+     *
+     * WARNING: **This can delete files/folders from your project (git index). Use with care.**
      *
      * @author Evan D Shaw <evandanielshaw@gmail.com>
      * @param string[] $targets
@@ -111,7 +130,9 @@ class Bundler
     }
 
     /**
-     * Specifies list of files/folders to delete after build step
+     * Specifies list of files/folders to delete after build step. Accepts glob patterns.
+     *
+     * WARNING: **This can delete files/folders from your project (git index). Use with care.**
      *
      * @author Evan D Shaw <evandanielshaw@gmail.com>
      * @param string[] $targets
@@ -119,6 +140,21 @@ class Bundler
      */
     public function setTargetsToCleanAfterBuild(array $targets): Bundler {
         $this->targetsToCleanAfterBuild = $targets;
+        return $this;
+    }
+
+    /**
+     * Specifies list of files/folders to delete from the archive folder before it is zipped. Accepts glob patterns.
+     *
+     * This function does not affect project files. It runs on the archive folder after all required files/folders
+     * have been copied into it.
+     *
+     * @author Evan D Shaw <evandanielshaw@gmail.com>
+     * @param string[] $targets
+     * @return Bundler
+     */
+    public function setArchiveTargetsToClean(array $targets): Bundler {
+        $this->archiveTargetsToClean = $targets;
         return $this;
     }
 
@@ -144,6 +180,56 @@ class Bundler
     public function setCleanupCallback(callable $cleanup): Bundler {
         $this->cleanup = $cleanup;
         return $this;
+    }
+
+    /**
+     * Extends `glob` to support `**` for recursive subdir matching
+     *
+     * @see https://gist.github.com/funkjedi/3feee27d873ae2297b8e2370a7082aad
+     * @param string $pattern
+     * @param int    $flags
+     * @return array
+     */
+    public function globstar(string $pattern, $flags = 0): array {
+        if (substr($pattern, 0, 2) === '**') {
+            $pattern = './' . $pattern;
+        }
+        if (stripos($pattern, '**') === false) {
+            $files = glob($pattern, $flags);
+        } else {
+            $position = stripos($pattern, '**');
+            $rootPattern = substr($pattern, 0, $position - 1);
+            $restPattern = substr($pattern, $position + 2);
+            $patterns = [$rootPattern . $restPattern];
+            $rootPattern .= '/*';
+            while ($dirs = glob($rootPattern, GLOB_ONLYDIR)) {
+                $rootPattern .= '/*';
+                foreach ($dirs as $dir) {
+                    $patterns[] = $dir . $restPattern;
+                }
+            }
+            $files = [];
+            foreach ($patterns as $pat) {
+                $files = array_merge($files, $this->globstar($pat, $flags));
+            }
+        }
+        $files = array_unique($files);
+        sort($files);
+        return $files;
+    }
+
+    /**
+     * Returns absolute path given a path assumed to be relative to `$this->basedir`
+     *
+     * @author Evan D Shaw <evandanielshaw@gmail.com>
+     * @param string $path
+     * @return string
+     */
+    public function resolveRelativePath(string $path): string {
+        $path = ltrim($path, './');
+        $path = ltrim($path, '/');
+        $path = $this->basedir . '/' . $path;
+        return $path;
     }
 
     /**
@@ -215,8 +301,10 @@ class Bundler
 
         try {
             foreach ($this->targetsToCleanBeforeBuild as $target) {
-                if ($filesystem->exists($target)) {
-                    $filesystem->remove($target);
+                foreach ($this->globstar($this->resolveRelativePath($target)) as $realpath) {
+                    if ($filesystem->exists($realpath)) {
+                        $filesystem->remove($realpath);
+                    }
                 }
             }
 
@@ -225,8 +313,10 @@ class Bundler
             }
 
             foreach ($this->targetsToCleanAfterBuild as $target) {
-                if ($filesystem->exists($target)) {
-                    $filesystem->remove($target);
+                foreach ($this->globstar($this->resolveRelativePath($target)) as $realpath) {
+                    if ($filesystem->exists($realpath)) {
+                        $filesystem->remove($realpath);
+                    }
                 }
             }
 
@@ -236,10 +326,25 @@ class Bundler
 
             $filesystem->mkdir($this->ptname, 0755);
             foreach ($this->foldersToInclude as $dir) {
-                $filesystem->mirror($dir, $this->ptname . '/' . $dir);
+                $dir = ltrim($dir, './');
+                $dir = ltrim($dir, '/');
+                $filesystem->mirror($this->resolveRelativePath($dir), $this->ptname . '/' . $dir);
             }
             foreach ($this->filesToInclude as $file) {
-                $filesystem->copy($file, $this->ptname . '/' . $file);
+                $file = ltrim($file, './');
+                $file = ltrim($file, '/');
+                $filesystem->copy($this->resolveRelativePath($file), $this->ptname . '/' . $file);
+            }
+
+            foreach ($this->archiveTargetsToClean as $target) {
+                $target = ltrim($target, './');
+                $target = ltrim($target, '/');
+                $target = $this->ptname . '/' . $target;
+                foreach ($this->globstar($this->resolveRelativePath($target)) as $realpath) {
+                    if ($filesystem->exists($realpath)) {
+                        $filesystem->remove($realpath);
+                    }
+                }
             }
 
             // add version number to entry file if applicable (only for plugins)
