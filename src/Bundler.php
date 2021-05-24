@@ -242,11 +242,14 @@ class Bundler
                 $filesystem->copy($file, $this->ptname . '/' . $file);
             }
 
-            // add version number to entry file if applicable
-            $file = file_get_contents("./{$this->ptname}/{$this->ptname}.php");
-            if ($file !== false) {
-                $file = str_replace('%%VERSION%%', $version, $file);
-                file_put_contents("./{$this->ptname}/{$this->ptname}.php", $file);
+            // add version number to entry file if applicable (only for plugins)
+            $entryfile = "./{$this->ptname}/{$this->ptname}.php";
+            if (is_file($entryfile)) {
+                $file = file_get_contents($entryfile);
+                if ($file !== false) {
+                    $file = str_replace('%%VERSION%%', $version, $file);
+                    file_put_contents($entryfile, $file);
+                }
             }
 
             self::zipDir("./{$this->ptname}", "./{$this->ptname}.zip");
