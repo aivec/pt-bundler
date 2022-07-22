@@ -13,6 +13,22 @@ use ZipArchive;
 class Bundler
 {
     /**
+     * Name of filename which contains the name of the ZIP archive file with
+     * a version string appended to it
+     *
+     * @var string
+     */
+    public static $with_version_appended_fname = 'BUNDLE_FNAME_VERSION_APPENDED';
+
+    /**
+     * Name of filename which contains the name of the ZIP archive file without
+     * a version string appended to it
+     *
+     * @var string
+     */
+    public static $without_version_appended_fname = 'BUNDLE_FNAME_NO_VERSION';
+
+    /**
      * Plugin/theme name
      *
      * Becomes name of the ZIP archive file
@@ -80,15 +96,27 @@ class Bundler
     public $cleanup;
 
     /**
+     * ZIP archive files output dir
+     *
+     * @var mixed
+     */
+    public $outdir;
+
+    /**
      * Initializes `Bundler` with the plugin/theme name
      *
      * @author Evan D Shaw <evandanielshaw@gmail.com>
      * @param string $ptname Plugin or theme name. Becomes name of the ZIP archive file
+     * @param string $outdir Where to place the ZIP archive files. Default: './'
      * @return void
      */
-    public function __construct(string $ptname) {
+    public function __construct(string $ptname, string $outdir = './') {
         $this->ptname = $ptname;
         $this->basedir = getcwd();
+        if (trim($outdir) === '.') {
+            $outdir = './';
+        }
+        $this->outdir = rtrim(trim($outdir), '/') . '/';
     }
 
     /**
@@ -357,8 +385,21 @@ class Bundler
                 }
             }
 
-            self::zipDir("./{$this->ptname}", "./{$this->ptname}.zip");
-            self::zipDir("./{$this->ptname}", "./{$this->ptname}.{$version}.zip");
+            if (!$filesystem->exists($this->outdir)) {
+                $filesystem->mkdir($this->outdir, 0755);
+            }
+
+            $wversionzip = "{$this->ptname}.{$version}.zip";
+            $woversionzip = "{$this->ptname}.zip";
+
+            $wversionfname = self::$with_version_appended_fname;
+            $woversionfname = self::$without_version_appended_fname;
+
+            file_put_contents("{$this->outdir}{$wversionfname}", $wversionzip);
+            file_put_contents("{$this->outdir}{$woversionfname}", $woversionzip);
+
+            self::zipDir("./{$this->ptname}", "{$this->outdir}{$wversionzip}");
+            self::zipDir("./{$this->ptname}", "{$this->outdir}{$woversionzip}");
 
             $filesystem->remove($this->ptname);
         } catch (Exception $exception) {
