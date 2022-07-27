@@ -107,10 +107,10 @@ class Bundler
      *
      * @author Evan D Shaw <evandanielshaw@gmail.com>
      * @param string $ptname Plugin or theme name. Becomes name of the ZIP archive file
-     * @param string $outdir Where to place the ZIP archive files. Default: './'
+     * @param string $outdir Where to place the ZIP archive files. Default: 'bundled'
      * @return void
      */
-    public function __construct(string $ptname, string $outdir = './') {
+    public function __construct(string $ptname, string $outdir = 'bundled') {
         $this->ptname = $ptname;
         $this->basedir = getcwd();
         if (trim($outdir) === '.') {
