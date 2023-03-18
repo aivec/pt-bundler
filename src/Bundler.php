@@ -106,17 +106,38 @@ class Bundler
      * Initializes `Bundler` with the plugin/theme name
      *
      * @author Evan D Shaw <evandanielshaw@gmail.com>
-     * @param string $ptname Plugin or theme name. Becomes name of the ZIP archive file
-     * @param string $outdir Where to place the ZIP archive files. Default: 'bundled'
+     * @param string $ptname  Plugin or theme name. Becomes name of the ZIP archive file
+     * @param string $outdir  Where to place the ZIP archive files. Default: 'bundled'
+     * @param string $basedir The directory from which to resolve files and folders
      * @return void
      */
-    public function __construct(string $ptname, string $outdir = 'bundled') {
+    public function __construct(
+        string $ptname,
+        string $outdir = 'bundled',
+        string $basedir = ''
+    ) {
         $this->ptname = $ptname;
-        $this->basedir = getcwd();
+        if (empty($basedir)) {
+            $this->basedir = getcwd();
+        } else {
+            $this->setBaseDir($basedir);
+        }
         if (trim($outdir) === '.') {
             $outdir = './';
         }
         $this->outdir = rtrim(trim($outdir), '/') . '/';
+    }
+
+    /**
+     * Sets the directory from which to resolve files and folders
+     *
+     * @author Evan D Shaw <evandanielshaw@gmail.com>
+     * @param string $basedir
+     * @return Bundler
+     */
+    public function setBaseDir(string $basedir) {
+        $this->basedir = realpath($basedir);
+        return $this;
     }
 
     /**

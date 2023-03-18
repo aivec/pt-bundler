@@ -27,5 +27,10 @@
     "lint": "phpcs -ps --standard=AivecWP-7 src",
     "lint:fix": "phpcbf -ps --standard=AivecWP-7 src",
     "test": "phpunit tests"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
   }
 }
